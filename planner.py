@@ -1,6 +1,8 @@
 import sys
 from collections import deque
 
+CARD_DIRECTIONS = [(0,-1,'N'), (0,1,'S'), (-1,0,'W'), (1,0,'E')]
+
 def main():
     if len(sys.argv) != 3:
         print("Usage: python3 planner.py <algorithm> <world-file>")
@@ -50,7 +52,7 @@ def search(initialState: tuple, rows: int, cols: int, blocked: set, algorithm: s
         expandedNodes += 1
 
         if (len(state[2]) == 0): #no more dirty coordinates
-            return expandPath(path, genNodes, expandedNodes) #return path
+            return printPath(path, genNodes, expandedNodes) #return path
 
         explored.add(state) #mark state as explored
 
@@ -69,20 +71,16 @@ def expandState(state: tuple, rows: int, cols: int, blocked: set):
         yield ((posX, posY, updatedDirty), 'V') #vacuuming the position
         return
 
-    for (changeX, changeY, direction) in [(0, -1, 'N'), (0, 1, 'S'), (-1, 0, 'W'), (1, 0, 'E')]: #loop over all directions
-        successor = (posX + changeX, posY + changeY) #calculate new coordinates
-        if (inBounds(successor, rows, cols) and successor not in blocked): #check if new coordinates are in bounds and not blocked
-            yield ((successor[0], successor[1], dirty), direction) #return new state and action to get to that state
+    for (changeX, changeY, direction) in CARD_DIRECTIONS: #loop over all directions
+        childX, childY = posX + changeX, posY + changeY #calculate new coordinates
+        if (0 <= childX < cols and 0 <= childY < rows and (childX, childY) not in blocked): #check if new coordinates are in bounds and not blocked
+            yield ((childX, childY, dirty), direction) #return new state and action to get to that state
 
-def expandPath(path: list, genNodes: int, expandedNodes: int): #print path and stats
-    for c in path:
-        print(c)
-    print(genNodes, "nodes generated")
-    print(expandedNodes, "nodes expanded")
-
-def inBounds(position: tuple, rows: int, cols: int): #checks if position is in bounds of the grid
-    x, y = position
-    return 0 <= x < cols and 0 <= y < rows
+def printPath(path: list, genNodes: int, expandedNodes: int): #print path and stats
+    for action in path:
+        print(action)
+    print(f"{genNodes} nodes generated")
+    print(f"{expandedNodes} nodes expanded")
 
 if __name__ == "__main__":
     main()
