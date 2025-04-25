@@ -10,7 +10,7 @@ def main():
         cols = int(file.readline().strip()) #parse columns
         rows = int(file.readline().strip()) #parse rows
 
-        robot = tuple() #starting position
+        startPos = tuple() #starting position
         dirty = set() #set of dirty coordinates
         blocked = set() #set of blocked coordinates
 
@@ -20,75 +20,63 @@ def main():
             for x in range(cols):
                 coords = line[x]
                 if (coords == '@'):
-                    robot = (x, y) #assign start position
+                    startPos = (x, y) #assign start position
                 elif (coords == '*'):
                     dirty.add((x, y)) #add coordinate to dirty set
                 elif (coords == '#'):
                     blocked.add((x,y)) #add coordinate to blocked set
 
-        initialState = (robot[0], robot[1], frozenset(dirty)) #state tracks robot position and dirty coordinates
+        initialState = (startPos[0], startPos[1], frozenset(dirty)) #state tracks position and dirty coordinates
 
-    if (sys.argv[1] == "uniform-cost"): #uniform-cost search
-        frontier = deque() #initialize queue
-        frontier.append((initialState, [])) #push initial state and path into queue
-        explored = set()
-        expandedNodes = 0
-        genNodes = 1
+    search(initialState, rows, cols, blocked, sys.argv[1]) #call search function
 
-        while frontier: #while frontier is not empty
-            state, path = frontier.popleft() #dequeue
-            expandedNodes += 1
+def search(initialState: tuple, rows: int, cols: int, blocked: set, algorithm: str): #carry out the specified search algorithm
+    expandedNodes, genNodes = 0, 1
+    explored = set() #initialize explored set
+    frontier = deque() #initialize queue or stack
+    frontier.append((initialState, [])) #add initial state to frontier
+    frontierStates = {initialState} #set of states in frontier
 
-            if (len(state[2]) == 0): #no more dirty coordinates
-                return expandPath(path, genNodes, expandedNodes) #return path
-            
-            actions = expandState(state, rows, cols, blocked) #expand state and get all successors from possible actions
+    while frontier: #while frontier is not empty
+        if (algorithm == "uniform-cost"): #uniform-cost search
+            state, path = frontier.popleft() #dequeue from queue
+        elif (algorithm == "depth-first"): #depth-first search
+            state, path = frontier.pop() #pop from stack
+        else:
+            print("Incorrect algorithm inputted")
+            sys.exit(1)
 
-            for childState, action in actions: #loop over all actions
-                if (childState not in explored): #check if state has already been explored
-                    explored.add(state)
-                    frontier.append((childState, path + [action]))
-                    genNodes += 1
+        frontierStates.remove(state) #remove state from frontier
+        expandedNodes += 1
 
-    # elif (sys.argv[1] == "depth-first"): #depth-first search
-    #     frontier = deque() #initialize stack
-    #     frontier.append(initialState) #push initial state on stack
-    #     explored = set() #set for explored states
-    #     path = []
+        if (len(state[2]) == 0): #no more dirty coordinates
+            return expandPath(path, genNodes, expandedNodes) #return path
 
-    #     while (len(frontier) != 0):
-    #         state = frontier.pop() #pop 
+        explored.add(state) #mark state as explored
 
-    #         if (len(state[2]) == 0): #no more dirty coordinates
-    #             return expandPath(path, genNodes, expandedNodes) #return path (should prob have a diff function)
-
-    #         explored.add(state)
-    #         actions = expandState(state, rows, cols, blocked)
-
-    #         for action in actions:
-
-    else:
-        print("Incorrect algorithm inputted")
-        sys.exit(1)
-
-
+        for childState, action in expandState(state, rows, cols, blocked): #expand state and get all successors from possible actions
+            if (childState not in explored and childState not in frontierStates): #check if state has already been explored
+                #add new state to frontier and update path
+                frontier.append((childState, path + [action]))
+                frontierStates.add(childState)
+                genNodes += 1
 
 def expandState(state: tuple, rows: int, cols: int, blocked: set):
     posX, posY, dirty = state #unpack the robot location and current dirty coordinates
 
-    if (posX, posY) in dirty: #check if current position is dirty               (maybe move this back to the end)
+    if (posX, posY) in dirty: #check if current position is dirty
         updatedDirty = dirty - {(posX, posY)} #remove from dirty set
         yield ((posX, posY, updatedDirty), 'V') #vacuuming the position
         return
 
     for (changeX, changeY, direction) in [(0, -1, 'N'), (0, 1, 'S'), (-1, 0, 'W'), (1, 0, 'E')]: #loop over all directions
         successor = (posX + changeX, posY + changeY) #calculate new coordinates
-        if inBounds(successor, rows, cols) and successor not in blocked: #check if new coordinates are in bounds and not blocked
+        if (inBounds(successor, rows, cols) and successor not in blocked): #check if new coordinates are in bounds and not blocked
             yield ((successor[0], successor[1], dirty), direction) #return new state and action to get to that state
 
 def expandPath(path: list, genNodes: int, expandedNodes: int): #print path and stats
-    for s in path:
-        print(s)
+    for c in path:
+        print(c)
     print(genNodes, "nodes generated")
     print(expandedNodes, "nodes expanded")
 
