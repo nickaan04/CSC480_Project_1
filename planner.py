@@ -57,7 +57,7 @@ def search(initialState: tuple, rows: int, cols: int, blocked: set, algorithm: s
         explored.add(state) #mark state as explored
 
         for childState, action in expandState(state, rows, cols, blocked): #expand state and get all successors from possible actions
-            if (childState not in explored and childState not in frontierStates): #check if state has already been explored
+            if (childState not in explored and childState not in frontierStates): #check if state has already been explored or is in frontier
                 #add new state to frontier and update path
                 frontier.append((childState, path + [action]))
                 frontierStates.add(childState)
